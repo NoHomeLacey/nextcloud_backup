@@ -1,12 +1,16 @@
 #!/bin/sh
-# Julius Zaromskis
-# Backup and Backup rotation script
-# Amended by Henry Standing 26 Feb 2018
+
+#########
+# Backup and Backup rotation script for NextCloud server
+# Author: Henry Standing <henry.standing@gmail.com>
+# Version: v0.9, 2018-03-17
+# Source: https://github.com/NoHomeLacey/nextcloud_backup
+#########
 
 # Storage folder where to move backup files
 # Must contain backup.monthly backup.weekly backup.daily folders
 BACKUP_DIR=/home/backups/deadbirdalley
-FILES_DIR=/var/www/owncloud
+FILES_DIR=/var/www/nextcloud
 CONFIG_DIR=/etc
 ROOT_DIR=/root
 DATA_DIR=/home/ocdata
@@ -14,7 +18,7 @@ DATA_DIR=/home/ocdata
 SOURCE_DIR=$BACKUP_DIR/incoming
 
 # Dump MySQL tables
-mysqldump -h 127.0.0.1 -u admin -pV^WzrU%VDc6mAASq585RmOz^ owncloud > $BACKUP_DIR/incoming/mysql_dump.sql
+mysqldump -h 127.0.0.1 -u admin -$1 owncloud > $BACKUP_DIR/incoming/mysql_dump.sql
 
 # Compress tables and files
 tar -cvzf $BACKUP_DIR/incoming/archive.tgz $BACKUP_DIR/incoming/mysql_dump.sql $FILES_DIR $CONFIG_DIR $ROOT_DIR $DATA_DIR
@@ -37,7 +41,7 @@ WEEK_DAY=`date +"%u"`
 
 # Optional check if source files exist. Email if failed.
 if [ ! -f $SOURCE_DIR/archive.tgz ]; then
-ls -l $SOURCE_DIR/ | mail henry.standing@gmail.com -s "[DeadBirdAlley] Daily backup failed! Please check for missing files." < /dev/null
+ls -l $SOURCE_DIR/ | mail $EMAIL -s "[NextCloud] Daily backup failed! Please check for missing files." < /dev/null
 fi
 
 # It is logical to run this script daily. We take files from source folder and move them to
@@ -71,4 +75,4 @@ find $BACKUP_DIR/backup.monthly/ -maxdepth 1 -mtime +300 -type d -exec rm -rv {}
 
 # Sync backup folder to Amazon S3 bucket
 
-aws s3 sync $BACKUP_DIR s3://dba-backup-bucket/backups
+aws s3 sync $BACKUP_DIR s3://$BUCKET/backups
